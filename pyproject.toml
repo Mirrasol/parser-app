@@ -1,0 +1,15 @@
+[project]
+name = "parser-app"
+authors = [
+    {name = "Helen Dobruk", email = "elena.dobruk@yandex.ru"},
+]
+version = "0.1.0"
+description = "A quick parser to parse marketplaces' APIs"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+dev-dependencies = [
+    "flake8>=7.1.2",
+]
