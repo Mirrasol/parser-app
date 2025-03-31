@@ -1,10 +1,25 @@
+import asyncio
+import httpx
+import logging
 import os
-import requests
+
+from aiogram import Bot, Dispatcher, types
+from aiogram.enums.parse_mode import ParseMode
+from aiogram.filters import CommandStart
+from aiogram.types.inline_keyboard_button import InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logging.basicConfig(level=logging.INFO)
+
 proxies = os.getenv('PROXIES')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
 
 
 def get_category():
@@ -26,7 +41,7 @@ def get_category():
         'sec-ch-ua-platform': '"Windows"',
     }
 
-    response = requests.get(url=url, headers=headers, proxies=proxies)
+    response = httpx.get(url=url, headers=headers, proxies=proxies)
     return response.json()
 
 
@@ -48,11 +63,40 @@ def format_items(response):
     return products
 
 
-def main():
+@dp.message(CommandStart)
+async def process_start_command(message: types.Message):
     response = get_category()
     products = format_items(response)
-    print(products)
+
+    items = 0
+
+    for product in products:
+        text = f"<b>Категория</b>: Гарнитуры и наушники\n\n<b>Название</b>: \
+            {product['name']}\n<b>Бренд</b>: {product['brand']}\n\n<b>Отзывов всего</b>: \
+            {product['feedbacks']}\n<b>Средняя оценка</b>: {product['reviewRating']}"
+
+        builder = InlineKeyboardBuilder()
+        builder.add(InlineKeyboardButton(
+            text='Open',
+            url=f"https://www.wildberries.ru/catalog/{product['id']}/detail.aspx",
+        ))
+
+        await message.answer(
+            text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=builder.as_markup(),
+        )
+
+        if items >= 10:
+            break
+        items += 1
+        asyncio.sleep(0.3)
+
+
+async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
